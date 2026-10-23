@@ -2,7 +2,7 @@ import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import DecisionView from "./DecisionView.jsx";
 import AccuracyView from "./AccuracyView.jsx";
 import Guide from "./Guide.jsx";
-import { api } from "./api.js";
+import { api, warmApi } from "./api.js";
 import { useAsync } from "./components.jsx";
 
 const icon = (d) => (
@@ -22,6 +22,7 @@ export default function App() {
   const refs = useRef({});
   const [pill, setPill] = useState({ x: 0, w: 0, ready: false });
   const meta = useAsync(() => api("meta"), []);
+  useEffect(() => { warmApi(); }, []);
   const m = meta.data;
 
   // One canonical URL per view: a bare "/" or an unknown hash becomes "/#decision" (replaced, so no extra history entry).
@@ -76,8 +77,8 @@ export default function App() {
         <div key={tab} className="view">
           <div className="crumb"><span className="dot" />{current[1]} <span className="muted">· {current[2]}</span></div>
           {meta.error && <div className="err">Could not reach the API: {String(meta.error.message)}</div>}
-          {m && tab === "decision" && <DecisionView meta={m} />}
-          {m && tab === "accuracy" && <AccuracyView meta={m} />}
+          {tab === "decision" && <DecisionView meta={m} />}
+          {tab === "accuracy" && <AccuracyView meta={m} />}
           {tab === "guide" && <Guide meta={m} />}
         </div>
       </main>

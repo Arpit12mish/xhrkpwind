@@ -4,6 +4,21 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Wind Day-Ahead Desk</title>
+    <!-- Start fetching the first view's data before the JS bundle has loaded (static JSON from the CDN).
+         2026-01-15 is the Decision view's default day (DEFAULT_DAY in DecisionView.jsx). -->
+    <script>
+      (function () {
+        var h = location.hash.slice(1), u = null;
+        if (h === "accuracy") u = "/precomputed/accuracy.json";
+        else if (h !== "guide") u = "/precomputed/decision/2026-01-15.json";
+        ["/precomputed/meta.json", u].forEach(function (href) {
+          if (!href) return;
+          var l = document.createElement("link");
+          l.rel = "preload"; l.as = "fetch"; l.href = href; l.crossOrigin = "anonymous";
+          document.head.appendChild(l);
+        });
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

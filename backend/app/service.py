@@ -15,6 +15,12 @@ def _iso(ts) -> Optional[str]:
     return None if pd.isna(ts) else ts.strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
+def _compact(x: float):
+    """19412.0 -> 19412 (smaller JSON); other values rounded to 1 dp."""
+    x = round(float(x), 1)
+    return int(x) if x.is_integer() else x
+
+
 def build_eval_frame(forecasts, actuals, cutoff, basis="decision") -> pd.DataFrame:
     """Rows of (forecast, actual) pairs aligned on start_time.
 
@@ -81,7 +87,7 @@ def decision(forecasts, actuals, day: date, cutoff=DEFAULT_CUTOFF,
 
 def accuracy(forecasts, actuals, start: date, end: date, cutoff=DEFAULT_CUTOFF,
              basis="decision", min_h: Optional[float] = None, max_h: Optional[float] = None,
-             coverage=DEFAULT_BAND_COVERAGE, max_points: int = 3000) -> dict:
+             coverage=DEFAULT_BAND_COVERAGE, max_points: int = 1500) -> dict:
     df = build_eval_frame(forecasts, actuals, cutoff, basis)
     df = df[(df["delivery_day"] >= start) & (df["delivery_day"] <= end)]
     if min_h is not None:
@@ -103,7 +109,7 @@ def accuracy(forecasts, actuals, start: date, end: date, cutoff=DEFAULT_CUTOFF,
         "by_hour": metrics.group_metrics(df, "hour"),
         "by_day": metrics.group_metrics(df, "day"),
         "histogram": metrics.histogram(df["error"]),
-        "points": [{"start_time": _iso(r.start_time), "forecast": r.forecast, "actual": r.actual,
-                    "error": r.error, "horizon_h": round(r.horizon_h, 2)}
+        "points": [{"start_time": _iso(r.start_time), "forecast": _compact(r.forecast), "actual": _compact(r.actual),
+                    "horizon_h": round(r.horizon_h, 1)}
                    for r in pts.itertuples()],
     }

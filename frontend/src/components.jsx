@@ -71,6 +71,16 @@ export function Chart({ h = 280, children }) {
   return <div className="chartbox" style={{ height: h }}>{seen && <ResponsiveContainer>{children}</ResponsiveContainer>}</div>;
 }
 
+/** Shimmering placeholders shown while the first response is on its way. */
+export function Skeleton({ cards = 5, panels = 1 }) {
+  return (
+    <div aria-busy="true" aria-label="Loading">
+      <div className="cards">{Array.from({ length: cards }, (_, i) => <div key={i} className="card sk" style={{ "--i": i }} />)}</div>
+      {Array.from({ length: panels }, (_, i) => <div key={i} className="panel sk-panel"><div className="sk sk-line" /><div className="sk sk-chart" /></div>)}
+    </div>
+  );
+}
+
 export function useAsync(fn, deps) {
   const [state, set] = React.useState({ loading: true });
   React.useEffect(() => {

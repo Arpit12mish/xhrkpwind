@@ -4,14 +4,14 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ReferenceLine, ZAxis,
 } from "recharts";
 import { api } from "./api.js";
-import { ANIM, Card, Chart, CountUp, Panel, useAsync } from "./components.jsx";
+import { ANIM, Card, Chart, CountUp, Panel, Skeleton, useAsync } from "./components.jsx";
 import { mw, num, pct, stampUK, dayUK, timeUK } from "./format.js";
 
 const AX = { stroke: "var(--muted)" };
 const kfmt = (v) => `${(v / 1000).toFixed(v % 1000 ? 1 : 0)}`;
 
 export default function AccuracyView({ meta }) {
-  const [f, setF] = useState({ start: meta.first_day, end: meta.last_day, basis: "decision", min_h: "", max_h: "", cutoff: meta.default_cutoff });
+  const [f, setF] = useState({ start: "", end: "", basis: "decision", min_h: "", max_h: "", cutoff: "" }) // "" = backend default;
   const set = (k) => (e) => setF({ ...f, [k]: e.target.value });
   const { data, loading, error } = useAsync(() => api("accuracy", f), [JSON.stringify(f)]);
   const s = data?.summary;
@@ -19,8 +19,8 @@ export default function AccuracyView({ meta }) {
   return (
     <>
       <div className="controls">
-        <label>From<input type="date" value={f.start} min={meta.first_day} max={meta.last_day} onChange={set("start")} /></label>
-        <label>To<input type="date" value={f.end} min={meta.first_day} max={meta.last_day} onChange={set("end")} /></label>
+        <label>From<input type="date" value={f.start || meta?.first_day || ""} min={meta?.first_day} max={meta?.last_day} onChange={set("start")} /></label>
+        <label>To<input type="date" value={f.end || meta?.last_day || ""} min={meta?.first_day} max={meta?.last_day} onChange={set("end")} /></label>
         <label>Forecasts compared
           <select value={f.basis} onChange={set("basis")}>
             <option value="decision">Decision-time forecast only</option>
@@ -29,10 +29,10 @@ export default function AccuracyView({ meta }) {
         </label>
         <label>Horizon ≥ (h)<input type="number" min="0" step="1" style={{ width: 80 }} value={f.min_h} onChange={set("min_h")} placeholder="any" /></label>
         <label>Horizon ≤ (h)<input type="number" min="0" step="1" style={{ width: 80 }} value={f.max_h} onChange={set("max_h")} placeholder="any" /></label>
-        <label>Cutoff (UK, D-1)<input type="time" value={f.cutoff} onChange={(e) => e.target.value && setF({ ...f, cutoff: e.target.value })} /></label>
+        <label>Cutoff (UK, D-1)<input type="time" value={f.cutoff || meta?.default_cutoff || ""} onChange={(e) => e.target.value && setF({ ...f, cutoff: e.target.value })} /></label>
       </div>
       {error && <div className="err">{String(error.message)}</div>}
-      {loading && !data && "Loading…"}
+      {!data && !error && <Skeleton cards={9} panels={2} />}
       {data && s?.n > 0 && (
         <>
           <div className="cards" style={{ opacity: loading ? 0.6 : 1 }}>

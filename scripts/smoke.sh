@@ -23,6 +23,10 @@ check() {  # check <path> <text the body must contain>
 
 check "/"                                                "<div id=\"root\">"
 check "/api/health"                                      '"ok"'
+check "/api/warm"                                        '"warm"'
+check "/precomputed/meta.json"                           '"first_day"'
+check "/precomputed/accuracy.json"                       '"summary"'
+check "/precomputed/decision/2026-01-15.json"            '"rows"'
 check "/api/meta"                                        '"first_day"'
 check "/api/decision?day=2026-01-15"                     '"rows"'
 check "/api/accuracy"                                    '"summary"'

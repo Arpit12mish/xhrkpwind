@@ -5,14 +5,30 @@ from datetime import date
 from functools import lru_cache
 from typing import Optional
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 
 from . import config, db, service
 from .selection import parse_cutoff
 
 app = FastAPI(title="UK Wind Day-Ahead Decision Support", version="1.0.0")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["GET"])
+app.add_middleware(GZipMiddleware, minimum_size=1024)
+
+# The data is a frozen snapshot that only changes with a new deployment (a new deployment gets a fresh CDN
+# cache), so successful read responses can be cached at the edge. Health/warm-up must always reach the function.
+CACHEABLE = "public, max-age=300, s-maxage=86400, stale-while-revalidate=604800"
+
+
+@app.middleware("http")
+async def cache_headers(request: Request, call_next):
+    response = await call_next(request)
+    if request.method == "GET" and response.status_code == 200 and request.url.path not in ("/api/health", "/api/warm"):
+        response.headers["Cache-Control"] = CACHEABLE
+    elif request.url.path in ("/api/health", "/api/warm"):
+        response.headers["Cache-Control"] = "no-store"
+    return response
 
 CutoffQ = Query(config.DEFAULT_CUTOFF, pattern=r"^([01]\d|2[0-3]):[0-5]\d$",
                 description="Local UK time on D-1, HH:MM")
@@ -37,6 +53,13 @@ def _check_day(d: date, name: str = "day") -> None:
 @app.get("/api/health")
 def health():
     return {"status": "ok"}
+
+
+@app.get("/api/warm")
+def warm():
+    """Wakes a cold serverless instance and loads the data, so the user's next request is fast."""
+    fc, act = _data()
+    return {"status": "warm", "forecast_rows": len(fc), "actual_rows": len(act)}
 
 
 @app.get("/api/meta")

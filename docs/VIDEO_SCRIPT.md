@@ -21,7 +21,7 @@ Numbers: decisions made in Jan 2026 (delivery 2 Jan – 1 Feb), 09:00 cutoff, FU
 
 ## Part 2 – Tech-lead walkthrough (≤ 5:00)
 **5:00 – Architecture & data flow (0:50)**
-"BMRS → ingestion (chunked, cleaned, deduped, idempotent) → SQLite snapshot → pandas selection and metrics → FastAPI → React. The snapshot is committed so deploys need no network or secrets, and SQLite opens read-only/immutable so it works on a read-only serverless filesystem. Deliberately no queue, cache or database server: one month of data does not need them."
+"BMRS → ingestion (chunked, cleaned, deduped, idempotent) → SQLite snapshot → pandas selection and metrics → FastAPI → React. The snapshot is committed so deploys need no network or secrets, and SQLite opens read-only/immutable so it works on a read-only serverless filesystem. Deliberately no queue, cache or database server: one month of data does not need them. Because the data is frozen, the default views are pre-computed static JSON from the CDN, so there is no serverless cold start on first load."
 
 **5:50 – Analysis method (1:40)**
 - Selection: newest `publishTime <= cutoff`, cutoff built in UK local time and converted to UTC (DST tested). No back-fill. A band option that uses only days ≤ D-2 removes look-ahead; say that out loud.
@@ -34,7 +34,7 @@ Numbers: decisions made in Jan 2026 (delivery 2 Jan – 1 Feb), 09:00 cutoff, FU
 Walk `selection.py`, `metrics.py`, `service.py`, `main.py`. Pure functions on DataFrames, thin routes, config via env, validation returns 422 with clear messages.
 
 **8:20 – Testing & practice (1:00)**
-Run `pytest`: 57 tests, no network: cutoff edge cases (equal to cutoff included), BST/GMT, hand-computed metrics, ingestion cleaning (nulls, duplicates, non-WIND, idempotent re-run), API validation, window consistency. `scripts/smoke.sh` for a deployed URL. Docker for local review; Vercel runs the app natively. AI-assisted development with independent verification against raw API data.
+Run `pytest`: 60 tests, no network: cutoff edge cases (equal to cutoff included), BST/GMT, hand-computed metrics, ingestion cleaning (nulls, duplicates, non-WIND, idempotent re-run), API validation, window consistency. `scripts/smoke.sh` for a deployed URL. Docker for local review; Vercel runs the app natively. AI-assisted development with independent verification against raw API data.
 
 **9:20 – Limits & next steps (0:40)**
 One month; in-sample band default; cutoff is an assumption; the actuals-series choice matters. Next: live ingestion, longer history for backtesting, bias monitoring. Thank you.

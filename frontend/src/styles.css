@@ -84,3 +84,12 @@ input:focus-visible, select:focus-visible { outline: none; border-color: var(--a
   *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
   .reveal { opacity: 1; transform: none; }
 }
+
+/* ---------- loading skeletons ---------- */
+.sk { background: linear-gradient(100deg, var(--track) 30%, color-mix(in srgb, var(--track) 55%, var(--panel)) 50%, var(--track) 70%);
+  background-size: 220% 100%; animation: shimmer 1.3s linear infinite; }
+.card.sk { min-height: 92px; border-color: transparent; box-shadow: none; }
+.sk-panel { min-height: 120px; }
+.sk-line { height: 14px; width: 40%; border-radius: 6px; margin-bottom: 14px; }
+.sk-chart { height: 260px; border-radius: 10px; }
+@keyframes shimmer { from { background-position: 120% 0; } to { background-position: -120% 0; } }

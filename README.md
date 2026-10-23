@@ -86,6 +86,18 @@ scripts/smoke.sh https://<your-deployment>.vercel.app
 (including `wind.db`) into the function. SQLite is opened read-only/immutable so it works on a read-only filesystem. Python
 dependencies measured at ≈171 MB unzipped for Python 3.12 (limit 250 MB; pandas is 91 MB of it).
 
+## Performance (why the first view loads fast)
+The data is a frozen snapshot, so the responses for the **default** views never change. They are pre-computed to static JSON
+(`frontend/public/precomputed/`: `meta.json`, `accuracy.json`, one `decision/<day>.json` per delivery day) and served straight from
+the CDN, so the first view needs **no Python function and no serverless cold start**. Anything non-default (another cutoff, horizon
+filter, "every published forecast", ...) goes to the live API. Supporting measures: the page preloads its first JSON before the
+JS bundle runs; the browser quietly calls `/api/warm` after first paint so the function is awake before the user touches a control;
+API responses carry edge-cache headers (`s-maxage`, errors and health/warm excluded) and are gzip-compressed; hashed assets are
+cached for a year; skeleton placeholders show while data loads; scatter/time-series points are capped and trimmed.
+Measured with a simulated 3 s cold start: time to first numbers ~3.4 s via the API vs ~0.2 s from static files.
+After changing data or the API, regenerate and commit: `python scripts/export_precomputed.py`
+(a test fails if the static files differ from the live API).
+
 ## Repository layout
 ```
 backend/app/config.py      settings: window, cutoff (assumption), timezone, DB path - all overridable by env
@@ -101,14 +113,15 @@ frontend/src/              React (Vite, Recharts): DecisionView, AccuracyView, G
 api/index.py               Vercel serverless entrypoint wrapping the FastAPI app
 vercel.json, requirements.txt   Vercel config; Python deps for the function
 docker-compose.yml, */Dockerfile   local/review containers (nginx serves the UI and proxies /api)
-scripts/smoke.sh           curl smoke test for a base URL
+scripts/smoke.sh           curl smoke test for a base URL (API routes, static data, warm-up)
+scripts/export_precomputed.py  regenerates the pre-computed static JSON from the API
 scripts/bias_analysis.py   reproducible bias / alignment / cross-check / cutoff-sensitivity analysis
 docs/                      BIAS_FINDINGS.md, bias_analysis_results.md, VIDEO_SCRIPT.md, SUBMISSION_CHECKLIST.md
 ```
 
 ## API
 `GET /api/meta` · `GET /api/decision?day&cutoff&coverage&band_basis` · `GET /api/accuracy?start&end&cutoff&basis&min_h&max_h&coverage` ·
-`GET /api/health`. Invalid input returns HTTP 422 with a message: dates outside the window, `start > end`, `min_h > max_h`,
+`GET /api/health` · `GET /api/warm` (wakes a cold instance). Invalid input returns HTTP 422 with a message: dates outside the window, `start > end`, `min_h > max_h`,
 malformed dates/cutoffs, out-of-range coverage.
 
 ## Data handling
@@ -118,7 +131,7 @@ startTime + publishTime; actual key = startTime, newest publish wins), non-WIND 
 re-running ingestion is idempotent (all covered by offline tests). `ingest()` returns raw/clean/dropped row counts.
 
 ## How it was verified
-Backend tests (`pytest`, 57 tests, no network); selection and metrics recomputed independently from freshly downloaded raw BMRS
+Backend tests (`pytest`, 60 tests, no network); selection and metrics recomputed independently from freshly downloaded raw BMRS
 data (three random targets and several cutoffs matched, including a publish time equal to the cutoff); the bias investigated in
 `docs/BIAS_FINDINGS.md`; both views exercised in a browser at desktop/tablet/mobile widths; clean Docker build.
 Not verified: the live Vercel deployment (not yet deployed).

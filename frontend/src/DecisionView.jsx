@@ -1,12 +1,12 @@
 import React, { useMemo, useState } from "react";
 import { ComposedChart, Area, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from "recharts";
 import { api } from "./api.js";
-import { ANIM, Card, Chart, Panel, useAsync } from "./components.jsx";
+import { ANIM, Card, Chart, Panel, Skeleton, useAsync } from "./components.jsx";
 import { gw, mw, num, pct, stampUK, timeUK } from "./format.js";
 
 export default function DecisionView({ meta }) {
   const [day, setDay] = useState("2026-01-15");
-  const [cutoff, setCutoff] = useState(meta.default_cutoff);
+  const [cutoff, setCutoff] = useState(""); // "" = backend default (lets the pre-computed file be used)
   const [coverage, setCoverage] = useState(0.8);
   const [bandBasis, setBandBasis] = useState("all");
   const [showActual, setShowActual] = useState(true);
@@ -38,10 +38,10 @@ export default function DecisionView({ meta }) {
     <>
       <div className="controls">
         <label>Delivery day (D)
-          <input type="date" value={day} min={meta.first_day} max={meta.last_day} onChange={(e) => e.target.value && setDay(e.target.value)} />
+          <input type="date" value={day} min={meta?.first_day} max={meta?.last_day} onChange={(e) => e.target.value && setDay(e.target.value)} />
         </label>
         <label>Decision cutoff (UK, D-1)
-          <input type="time" value={cutoff} onChange={(e) => e.target.value && setCutoff(e.target.value)} />
+          <input type="time" value={cutoff || meta?.default_cutoff || ""} onChange={(e) => e.target.value && setCutoff(e.target.value)} />
         </label>
         <label>Safety band
           <select value={coverage} onChange={(e) => setCoverage(+e.target.value)}>
@@ -58,6 +58,7 @@ export default function DecisionView({ meta }) {
       </div>
 
       {error && <div className="err">{String(error.message)}</div>}
+      {!data && !error && <Skeleton cards={5} panels={1} />}
       {data && (
         <>
           <div className="cards">
