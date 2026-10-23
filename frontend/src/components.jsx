@@ -27,9 +27,9 @@ export function CountUp({ value, format = (x) => String(Math.round(x)), duration
 }
 
 /** KPI card. Pass `n` + `fmt` for an animated number, or `v` (string/node) for static content. `i` staggers the entrance. */
-export function Card({ k, v, n, fmt, s, hl, i = 0 }) {
+export function Card({ k, v, n, fmt, s, hl, wide, i = 0 }) {
   return (
-    <div className={`card${hl ? " hl" : ""}`} style={{ "--i": i }}>
+    <div className={`card${hl ? " hl" : ""}${wide ? " wide" : ""}`} style={{ "--i": i }}>
       <div className="k">{k}</div>
       <div className="v">{n != null ? <CountUp value={n} format={fmt} /> : v}</div>
       {s && <div className="s">{s}</div>}
@@ -66,9 +66,54 @@ export function Panel({ title, sub, how, children }) {
 }
 
 /** Fixed-height chart area; the chart mounts (and so animates) only after its panel has been seen. */
-export function Chart({ h = 280, children }) {
+export function Chart({ h = 280, caption, children }) {
   const seen = useContext(SeenContext);
-  return <div className="chartbox" style={{ height: h }}>{seen && <ResponsiveContainer>{children}</ResponsiveContainer>}</div>;
+  return (
+    <>
+      <div className="chartbox" style={{ height: `clamp(230px, 62vw, ${h}px)` }}>{seen && <ResponsiveContainer>{children}</ResponsiveContainer>}</div>
+      {caption && <p className="axis-caption">{caption}</p>}
+    </>
+  );
+}
+
+/** A labelled form control with a short plain-language hint underneath. */
+export function Field({ label, hint, children, wide }) {
+  return (
+    <label className={`field${wide ? " wide" : ""}`}>
+      <span className="lbl">{label}</span>
+      {children}
+      {hint && <small>{hint}</small>}
+    </label>
+  );
+}
+
+/** A highlighted note with an icon: tone is "info" or "warn". */
+export function Callout({ tone = "info", title, children }) {
+  return (
+    <aside className={`callout ${tone}`} role="note">
+      <span className="ci" aria-hidden="true">{tone === "warn" ? "!" : "i"}</span>
+      <div><b>{title}</b><div>{children}</div></div>
+    </aside>
+  );
+}
+
+/** Horizontal gauge: the shaded stretch is the likely range, the marker is the expected value (all in MW). */
+export function RangeBar({ low, mid, high, labels }) {
+  const top = Math.max(1000, Math.ceil((high * 1.12) / 1000) * 1000);
+  const pos = (v) => `${Math.min(100, Math.max(0, (v / top) * 100))}%`;
+  return (
+    <div className="range">
+      <div className="track" role="img" aria-label={`${labels.low} ${Math.round(low)} MW, ${labels.mid} ${Math.round(mid)} MW, ${labels.high} ${Math.round(high)} MW`}>
+        <span className="span" style={{ left: pos(low), width: `calc(${pos(high)} - ${pos(low)})` }} />
+        <span className="mark" style={{ left: pos(mid) }} />
+      </div>
+      <div className="range-labels">
+        <div><span className="rl">{labels.low}</span><b>{Math.round(low).toLocaleString("en-GB")} MW</b></div>
+        <div className="mid"><span className="rl">{labels.mid}</span><b>{Math.round(mid).toLocaleString("en-GB")} MW</b></div>
+        <div className="end"><span className="rl">{labels.high}</span><b>{Math.round(high).toLocaleString("en-GB")} MW</b></div>
+      </div>
+    </div>
+  );
 }
 
 /** Shimmering placeholders shown while the first response is on its way. */

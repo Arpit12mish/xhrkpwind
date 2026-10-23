@@ -9,9 +9,9 @@ const icon = (d) => (
   <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{d}</svg>
 );
 const TABS = [
-  ["decision", "Decision view", "What to buy for tomorrow", icon(<><circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="4" /><path d="M12 3v3M12 18v3M3 12h3M18 12h3" /></>)],
-  ["accuracy", "Accuracy view", "How wrong the forecast usually is", icon(<><path d="M4 20V10M10 20V4M16 20v-7M22 20H2" /></>)],
-  ["guide", "How to read", "Plain-language guide", icon(<><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z" /><path d="M4 19V5" /></>)],
+  ["decision", "Plan tomorrow", "How much wind to expect and how much extra to keep in reserve", icon(<><circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="4" /><path d="M12 3v3M12 18v3M3 12h3M18 12h3" /></>)],
+  ["accuracy", "Forecast accuracy", "How far off the forecast has been in the past", icon(<><path d="M4 20V10M10 20V4M16 20v-7M22 20H2" /></>)],
+  ["guide", "Help", "Plain-language guide and word list", icon(<><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z" /><path d="M4 19V5" /></>)],
 ];
 
 const isTab = (id) => TABS.some(([t]) => t === id);
@@ -60,7 +60,7 @@ export default function App() {
     <>
       <header className="top">
         <div className="wrap bar">
-          <h1><span className="logo" aria-hidden="true">{icon(<path d="M3 8h11a3 3 0 1 0-3-3M3 12h16a3 3 0 1 1-3 3M3 16h8a2.5 2.5 0 1 1-2.5 2.5" />)}</span>GB wind <span className="muted">– day-ahead desk</span></h1>
+          <h1><span className="logo" aria-hidden="true">{icon(<path d="M3 8h11a3 3 0 1 0-3-3M3 12h16a3 3 0 1 1-3 3M3 16h8a2.5 2.5 0 1 1-2.5 2.5" />)}</span>GB wind <span className="muted">day-ahead planner</span></h1>
           <nav role="tablist" aria-label="Sections" className="tabs">
             <span className="pill" style={{ width: pill.w, transform: `translateX(${pill.x}px)`, opacity: pill.ready ? 1 : 0 }} aria-hidden="true" />
             {TABS.map(([id, label, , ic], i) => (
@@ -75,7 +75,7 @@ export default function App() {
       </header>
       <main className="wrap" id="view" role="tabpanel" aria-labelledby={`tab-${tab}`}>
         <div key={tab} className="view">
-          <div className="crumb"><span className="dot" />{current[1]} <span className="muted">· {current[2]}</span></div>
+          <div className="crumb"><div className="t"><span className="dot" />{current[1]}</div><p className="d">{current[2]}</p></div>
           {meta.error && <div className="err">Could not reach the API: {String(meta.error.message)}</div>}
           {tab === "decision" && <DecisionView meta={m} />}
           {tab === "accuracy" && <AccuracyView meta={m} />}
