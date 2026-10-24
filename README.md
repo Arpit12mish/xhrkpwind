@@ -5,7 +5,7 @@ A web app for a UK day-ahead power-buying team. It answers two questions for eve
 **how much extra should you keep in reserve, given how wrong that forecast has been before**.
 Data: Elexon BMRS only, national level: `WINDFOR` forecasts and `FUELHH` (fuelType `WIND`) actuals.
 
-**Live app:** https://xhrkpwind.vercel.app/#decision  ·  **Video:** `<ADD UNLISTED YOUTUBE URL HERE>`
+**Live app:** https://xhrkpwind.vercel.app/#decision  ·  **Video:** https://youtu.be/1lybvE8-MTE
 
 > **AI disclosure:** This project was built with AI assistance (Anthropic's Claude, via Claude Code) for architecture, code,
 > tests, analysis and documentation. I reviewed it, ran it, and verified the results independently (see "How it was verified").
