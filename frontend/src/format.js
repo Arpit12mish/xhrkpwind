@@ -4,7 +4,13 @@ const group = (v, d = 0) => Number(Math.abs(v)).toLocaleString("en-GB", { maximu
 /** "4,154 MW" - always the full number, never abbreviated. */
 export const mw = (v, d = 0) => (v == null ? "–" : `${v < 0 ? MINUS : ""}${group(v, d)} MW`);
 /** "+1,746 MW" / "−426 MW" - with an explicit sign. */
-export const smw = (v, d = 0) => (v == null ? "–" : `${v < 0 ? MINUS : v > 0 ? "+" : ""}${group(v, d)} MW`);
+export const smw = (v, d = 0) => {
+  if (v == null) return "–";
+  const r = Number(v.toFixed(d));            // sign follows the number as displayed, so 0.04 never shows as "+0"
+  return `${r < 0 ? MINUS : r > 0 ? "+" : ""}${group(r, d)} MW`;
+};
+/** Correlation-style number with a true minus sign: "−0.34". */
+export const r2 = (v) => (v == null ? "–" : `${v < 0 ? MINUS : ""}${Math.abs(v).toFixed(2)}`);
 export const gw = (v) => (v == null ? "–" : `${v < 0 ? MINUS : ""}${(Math.abs(v) / 1000).toFixed(1)} GW`);
 export const num = (v, d = 0) => (v == null ? "–" : `${v < 0 ? MINUS : ""}${group(v, d)}`);
 export const pct = (v) => (v == null ? "–" : `${Number(v).toFixed(1)}%`);

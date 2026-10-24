@@ -138,6 +138,26 @@ p(f"\nAGWS minus FUELHH: mean {gap.mean():,.0f} MW, ratio {d.agws.sum() / d.fuel
   f"correlation {np.corrcoef(d.agws, d.fuelhh)[0, 1]:.4f}; mean gap by 4-hour block "
   f"{gap.groupby(gap.index.hour // 4 * 4).mean().min():,.0f} to {gap.groupby(gap.index.hour // 4 * 4).mean().max():,.0f} MW.")
 
+# (e) recent-bias adjustment judged against both records ----------------------------
+p("\n## (e) Recent-bias adjustment (last 3 known days, learned from FUELHH) judged against both records\n")
+daily = (j_all := pd.concat([fcs.rename("f"), fuelhh.rename("a")], axis=1).dropna().assign(e=lambda x: x.f - x.a))
+daily = daily.groupby(daily.index.tz_convert(config.UK_TZ).date)["e"].mean()
+both = pd.concat([fcs.rename("f"), fuelhh.rename("fuelhh"), agws.rename("agws")], axis=1).dropna()
+both["day"] = both.index.tz_convert(config.UK_TZ).date
+rows = {}
+for name in ("fuelhh", "agws"):
+    raw, cor = [], []
+    for d in sorted(set(both["day"])):
+        known = daily[[x <= d - timedelta(days=2) for x in daily.index]].iloc[-3:]
+        if len(known) < 3:
+            continue
+        t = both[both["day"] == d]
+        raw += list((t.f - t[name]).abs()); cor += list((t.f - known.mean() - t[name]).abs())
+    rows[name] = {"n": len(raw), "MAE without": np.mean(raw), "MAE with adjustment": np.mean(cor)}
+t = pd.DataFrame(rows).T
+t.index.name = "judged against"
+p(md(t))
+
 # (d) cutoff sensitivity ------------------------------------------------------------
 p("\n## (d) Sensitivity to the assumed cutoff (FUELHH actuals)\n")
 rows = {}

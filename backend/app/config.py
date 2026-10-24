@@ -24,5 +24,13 @@ DATA_LAST_DAY = os.getenv("DATA_LAST_DAY", "2026-02-01")
 # first day has vintages before its D-1 cutoff and the "all vintages" view has some history.
 FORECAST_LOOKBACK_DAYS = 4
 
+# A shortfall of wind costs this many times as much as a surplus (default for the cost-aware margin, 1 to 10).
+DEFAULT_COST_RATIO = 3.0
+# Defaults for the Plan page margin: one flat margin, learned only from days already known at the cutoff
+# (days <= D-2). The walk-forward check found the wind-level split no better overall, and "prior" never
+# uses the day being planned.
+DEFAULT_MARGIN_BY = "flat"
+DEFAULT_BAND_BASIS = "prior"
+
 # Width of the safety-margin band (central coverage of the signed error), e.g. 0.8 = P10..P90.
 DEFAULT_BAND_COVERAGE = 0.8

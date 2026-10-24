@@ -11,8 +11,9 @@ def get(path, **params):
     return client.get(path, params=params)
 
 
-def test_meta_reports_window():
+def test_meta_reports_window_and_defaults():
     j = get("/api/meta").json()
+    assert (j["default_margin_by"], j["default_band_basis"]) == ("flat", "prior")
     assert (j["first_day"], j["last_day"]) == ("2026-01-02", "2026-02-01")
     assert j["timezone"] == "Europe/London" and j["default_cutoff"] == "09:00"
 
@@ -83,7 +84,7 @@ def test_accuracy_single_day_edges_ok():
 
 
 def test_decision_band_uses_only_window_days_and_matches_accuracy_band():
-    d = get("/api/decision", day="2026-01-15").json()["band"]
+    d = get("/api/decision", day="2026-01-15", band_basis="all").json()["band"]
     a = get("/api/accuracy").json()["summary"]
     assert d["n"] == a["n"] == 31 * 24          # no slack days (1 Jan, 2 Feb) leak into the band
     assert (d["lo"], d["hi"]) == (a["band_lo"], a["band_hi"])

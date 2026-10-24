@@ -56,6 +56,13 @@ Days with positive mean error: 27/31 (daily bias range -684 to 5,329 MW). OLS: f
 
 AGWS minus FUELHH: mean 2,166 MW, ratio 1.192, correlation 0.9928; mean gap by 4-hour block 2,076 to 2,273 MW.
 
+## (e) Recent-bias adjustment (last 3 known days, learned from FUELHH) judged against both records
+
+| judged against | n | MAE without | MAE with adjustment |
+|---|---|---|---|
+| fuelhh | 648 | 2,042 | 1,763 |
+| agws | 648 | 1,373 | 2,518 |
+
 ## (d) Sensitivity to the assumed cutoff (FUELHH actuals)
 
 | cutoff (UK, D-1) | vintage used (UTC) | n | bias | MAE | RMSE | P90 abs |

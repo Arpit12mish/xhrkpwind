@@ -69,17 +69,79 @@ def meta():
     return {"first_day": first.isoformat(), "last_day": last.isoformat(),
             "default_cutoff": config.DEFAULT_CUTOFF, "timezone": "Europe/London",
             "scope": "delivery days; decisions are made on the day before (D-1)",
-            "band_coverage": config.DEFAULT_BAND_COVERAGE,
+            "band_coverage": config.DEFAULT_BAND_COVERAGE, "default_cost_ratio": config.DEFAULT_COST_RATIO,
+            "default_margin_by": config.DEFAULT_MARGIN_BY, "default_band_basis": config.DEFAULT_BAND_BASIS,
             "forecast_rows": len(fc), "actual_rows": len(act)}
+
+
+CostRatioQ = Query(config.DEFAULT_COST_RATIO, ge=1, le=10, allow_inf_nan=False,
+                   description="A shortfall costs this many times a surplus (1 to 10)")
+MarginByQ = Query(config.DEFAULT_MARGIN_BY, pattern="^(level|flat)$", description="One flat margin, or a margin per wind level")
 
 
 @app.get("/api/decision")
 def decision(day: date, cutoff: str = CutoffQ,
              coverage: float = Query(config.DEFAULT_BAND_COVERAGE, ge=0.5, le=0.99),
-             band_basis: str = Query("all", pattern="^(all|prior)$")):
+             band_basis: str = Query(config.DEFAULT_BAND_BASIS, pattern="^(all|prior)$",
+                                     description="prior = only days known at the cutoff (default); all = every window day"),
+             cost_ratio: float = CostRatioQ, margin_by: str = MarginByQ,
+             demand: Optional[float] = Query(None, ge=0, le=100000, allow_inf_nan=False,
+                                             description="User-entered expected demand in MW (not data)"),
+             ramp_mw: Optional[float] = Query(None, ge=100, le=20000, allow_inf_nan=False,
+                                              description="Ramp threshold in MW over 1-3 hours; empty = 90th percentile of history")):
     _check_day(day)
     fc, act = _data()
-    return service.decision(fc, act, day, cutoff, coverage, band_basis)
+    return service.decision(fc, act, day, cutoff, coverage, band_basis, cost_ratio, margin_by, demand, ramp_mw)
+
+
+def PriceQ(what: str):
+    # A fresh Query per parameter: sharing one Query object between two parameters makes FastAPI fill both from one value.
+    return Query(None, ge=0, le=10000, allow_inf_nan=False, description=f"User-typed {what} price in GBP/MWh (not data)")
+
+
+@app.get("/api/replay")
+def replay(cutoff: str = CutoffQ, cost_ratio: float = CostRatioQ, margin_by: str = MarginByQ,
+           price_short: Optional[float] = PriceQ("shortfall"), price_unused: Optional[float] = PriceQ("unused reserve")):
+    if (price_short is None) != (price_unused is None):
+        raise HTTPException(422, "Give both prices (shortfall and unused reserve) or neither")
+    fc, act = _data()
+    return service.replay(fc, act, cutoff, cost_ratio, margin_by, price_short, price_unused)
+
+
+@app.get("/api/tradeoff")
+def tradeoff(cutoff: str = CutoffQ, margin_by: str = MarginByQ, cost_ratio: float = CostRatioQ):
+    fc, act = _data()
+    return service.tradeoff(fc, act, cutoff, margin_by, cost_ratio)
+
+
+@app.get("/api/baseline")
+def baseline(start: Optional[date] = None, end: Optional[date] = None, cutoff: str = CutoffQ):
+    first, last = _window()
+    start, end = start or first, end or last
+    _check_day(start, "start")
+    _check_day(end, "end")
+    if start > end:
+        raise HTTPException(422, f"start {start} must not be after end {end}")
+    fc, act = _data()
+    return service.baseline(fc, act, start, end, cutoff)
+
+
+@app.get("/api/recent-bias")
+def recent_bias(cutoff: str = CutoffQ):
+    fc, act = _data()
+    return service.recent_bias(fc, act, cutoff)
+
+
+@app.get("/api/cutoff-compare")
+def cutoff_compare():
+    fc, act = _data()
+    return service.cutoff_compare(fc, act)
+
+
+@app.get("/api/margin-check")
+def margin_check(cutoff: str = CutoffQ, cost_ratio: float = CostRatioQ, margin_by: str = MarginByQ):
+    fc, act = _data()
+    return service.margin_check(fc, act, cutoff, cost_ratio, margin_by)
 
 
 @app.get("/api/accuracy")

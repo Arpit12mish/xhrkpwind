@@ -6,7 +6,7 @@ cutoffs, filters, ...) still goes to the live API.
 
 Run from the repo root after (re-)ingesting data or changing the API:
     python scripts/export_precomputed.py
-Output: frontend/public/precomputed/{meta.json, accuracy.json, decision/<day>.json}
+Output: frontend/public/precomputed/{meta, accuracy, margin_check, recent_bias, cutoff_compare, baseline, replay, tradeoff, decision/<day>}.json
 A test (backend/tests/test_precomputed.py) fails if these files differ from the live API output.
 """
 import json
@@ -37,6 +37,12 @@ def main() -> None:
     first, last = date.fromisoformat(config.DATA_FIRST_DAY), date.fromisoformat(config.DATA_LAST_DAY)
     write(OUT / "meta.json", client.get("/api/meta").json())
     write(OUT / "accuracy.json", client.get("/api/accuracy").json())
+    write(OUT / "margin_check.json", client.get("/api/margin-check").json())
+    write(OUT / "recent_bias.json", client.get("/api/recent-bias").json())
+    write(OUT / "cutoff_compare.json", client.get("/api/cutoff-compare").json())
+    write(OUT / "baseline.json", client.get("/api/baseline").json())
+    write(OUT / "replay.json", client.get("/api/replay").json())
+    write(OUT / "tradeoff.json", client.get("/api/tradeoff").json())
     d = first
     while d <= last:
         r = client.get("/api/decision", params={"day": d.isoformat()})
